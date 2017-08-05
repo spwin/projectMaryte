@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -f /var/run/sockets/app.sock ]; then
+    rm /var/run/sockets/app.sock
+fi
+
 until [ -e /var/run/sockets/app.sock ]; do
   echo 'Waiting for Gunicorn socket..'
   sleep 2
