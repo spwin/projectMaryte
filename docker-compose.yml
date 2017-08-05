@@ -1,0 +1,96 @@
+version: '2.1'
+
+volumes:
+  client_db:
+  main_db:
+  #  external: true
+  gunicorn:
+    driver: local
+  elastic:
+    driver: local
+
+
+services:
+  client_db:
+    hostname: client_db
+    build: ./client_db
+    image: client_db
+    container_name: client_db
+    volumes:
+      - client_db:/var/lib/mysql
+
+  database:
+    hostname: database
+    build: ./database
+    image: database
+    container_name: database
+    volumes:
+      - main_db:/var/lib/mysql
+
+  application:
+    restart: always
+    build: ./application
+    image: application
+    container_name: application
+    volumes:
+      - ./application/src:/app
+      - gunicorn:/var/run/sockets/
+    depends_on:
+      - database
+      - client_db
+      - rabbit
+
+  nginx:
+    build: ./nginx
+    image: nginx
+    container_name: nginx
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/proxy_params:/etc/nginx/proxy_params
+      - gunicorn:/var/run/sockets/
+    links:
+      - application:application
+    ports:
+      - "80:8080"
+    expose:
+      - "8080"
+    depends_on:
+      - application
+
+  rabbit:
+    hostname: rabbit
+    build: ./rabbitmq
+    image: rabbitmq
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mypass
+
+  elasticsearch:
+    hostname: elasticsearch
+    build: ./elasticsearch
+    image: elasticsearch
+    container_name: elasticsearch
+    environment:
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1g
+    volumes:
+      - elastic:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+
+  init:
+    build: ./init
+    image: init
+    container_name: init
+    depends_on:
+      - elasticsearch
+    links:
+      - elasticsearch

@@ -1,0 +1,14 @@
+[mysqld]
+query_cache_size=8M
+tmp_table_size=7M
+read_buffer_size=1M
+read_rnd_buffer_size=256K
+sort_buffer_size=256K
+max_connections=300
+max_allowed_packet=1M
+net_buffer_length=4K
+innodb_flush_log_at_trx_commit=1
+innodb_log_buffer_size=1M
+innodb_buffer_pool_size=16M
+innodb_log_file_size=10M
+innodb_thread_concurrency=8
